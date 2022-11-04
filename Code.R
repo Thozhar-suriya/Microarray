@@ -40,6 +40,40 @@ sampleInfo <- rename(sampleInfo, group = source_name_ch1, patient=characteristic
 corMatrix <- cor(exprs(gse),use="c")
 pheatmap(corMatrix)
 
+## Differential Gene Expression ##
+library(limma)
+design <- model.matrix(~0+sampleInfo$group)
+design
+
+## the column names are a bit ugly, so we will rename
+colnames(design) <- c("Normal","Tumour")
+
+summary(exprs(gse))
+
+## calculate median expression level
+cutoff <- median(exprs(gse))
+
+## TRUE or FALSE for whether each gene is "expressed" in each sample
+is_expressed <- exprs(gse) > cutoff
+
+## Identify genes expressed in more than 2 samples
+
+keep <- rowSums(is_expressed) > 2
+
+## check how many genes are removed / retained.
+table(keep)
+
+## subset to just those expressed genes
+gse <- gse[keep,]
+
+fit <- lmFit(exprs(gse), design)
+head(fit$coefficients)
+
+contrasts <- makeContrasts(Tumour - Normal, levels=design)
+fit2 <- contrasts.fit(fit, contrasts)
+fit2 <- eBayes(fit2)
+topTable(fit2)
+topTable(fit2, coef=1)
 
 
 
